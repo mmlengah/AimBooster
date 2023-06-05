@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# Ignored directories
+packages/
+
+# Visual Studio IntelliSense .ipch files
+*.ipch
