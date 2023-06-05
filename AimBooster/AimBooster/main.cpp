@@ -250,6 +250,57 @@ public:
         }
     }
 
+    std::vector<cv::Point> templateMatchAll() {
+        cv::Mat frame = screenCapture.capture();
+
+        // Perform template matching
+        cv::Mat result;
+        cv::matchTemplate(frame, templateImage, result, matchMethod);
+        cv::threshold(result, result, tolerance, 1., cv::THRESH_TOZERO);  // Use a threshold on the result
+
+        std::vector<cv::Point> matchLocations;  // Vector to store all match locations
+
+        const double distThresh = 50; // You should set this threshold to the value that you consider "close"
+
+        while (true) {
+            double minval, maxval;
+            cv::Point minloc, maxloc;
+            cv::minMaxLoc(result, &minval, &maxval, &minloc, &maxloc);
+
+            // Stop if the max value is below the tolerance
+            if (maxval <= tolerance) {
+                break;
+            }
+
+            // Otherwise, store the match location and zero out that location in the result
+            cv::Point matchLoc = (matchMethod == cv::TM_SQDIFF || matchMethod == cv::TM_SQDIFF_NORMED) ? minloc : maxloc;
+
+            // Measure the distance to the previous match points
+            bool isClose = false;
+            for (const cv::Point& previousMatch : matchLocations) {
+                double dist = cv::norm(previousMatch - matchLoc);
+                if (dist < distThresh) {
+                    isClose = true;
+                    break;
+                }
+            }
+
+            cv::Point matchLocAdjusted = matchLoc + cv::Point(screenCapture.getRect().topLeftX,
+                screenCapture.getRect().topLeftY);
+
+            // If the match is not close to any previous match, store it
+            if (!isClose) {
+                matchLocations.push_back(matchLocAdjusted);
+            }
+
+            result.at<float>(matchLoc.y, matchLoc.x) = 0;
+        }
+
+        // Return all match locations
+        return matchLocations;
+    }
+
+
 #ifdef _DEBUG
     bool checkTolerance() {
         cv::Mat frame = screenCapture.capture();
@@ -361,18 +412,18 @@ int main() {
 
     std::chrono::steady_clock::time_point lastClickTime = std::chrono::steady_clock::now();
 
-    cv::Point targetCenter;
     while (run.load()) {
-        if (target.templateMatch(targetCenter)) {
-            std::chrono::steady_clock::time_point currentTime = std::chrono::steady_clock::now();
-            std::chrono::milliseconds timeSinceLastClick = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastClickTime);
-            std::cout << "Time between clicks: " << timeSinceLastClick.count() << " ms" << std::endl;
-
-            ClickScreen(targetCenter.x, targetCenter.y);
-
-            lastClickTime = currentTime;            
+        std::vector<cv::Point> matches = target.templateMatchAll();
+        if (!matches.empty()) {
+            for (cv::Point& targetCenter : matches) {
+                std::chrono::steady_clock::time_point currentTime = std::chrono::steady_clock::now();
+                std::chrono::milliseconds timeSinceLastClick = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastClickTime);
+                std::cout << "Time between clicks: " << timeSinceLastClick.count() << " ms" << std::endl;
+                ClickScreen(targetCenter.x, targetCenter.y);
+                lastClickTime = currentTime;
+            }                      
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     checker.stopChecking();
