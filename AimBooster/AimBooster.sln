@@ -5,6 +5,8 @@ VisualStudioVersion = 17.5.33414.496
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AimBooster", "AimBooster\AimBooster.vcxproj", "{3C165909-AB37-4468-8333-BF3B131B7EE3}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Testing", "Testing\Testing.vcxproj", "{2A871123-A9CC-42CB-83D3-D67D4ADD4485}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,14 @@ Global
 		{3C165909-AB37-4468-8333-BF3B131B7EE3}.Release|x64.Build.0 = Release|x64
 		{3C165909-AB37-4468-8333-BF3B131B7EE3}.Release|x86.ActiveCfg = Release|Win32
 		{3C165909-AB37-4468-8333-BF3B131B7EE3}.Release|x86.Build.0 = Release|Win32
+		{2A871123-A9CC-42CB-83D3-D67D4ADD4485}.Debug|x64.ActiveCfg = Debug|x64
+		{2A871123-A9CC-42CB-83D3-D67D4ADD4485}.Debug|x64.Build.0 = Debug|x64
+		{2A871123-A9CC-42CB-83D3-D67D4ADD4485}.Debug|x86.ActiveCfg = Debug|Win32
+		{2A871123-A9CC-42CB-83D3-D67D4ADD4485}.Debug|x86.Build.0 = Debug|Win32
+		{2A871123-A9CC-42CB-83D3-D67D4ADD4485}.Release|x64.ActiveCfg = Release|x64
+		{2A871123-A9CC-42CB-83D3-D67D4ADD4485}.Release|x64.Build.0 = Release|x64
+		{2A871123-A9CC-42CB-83D3-D67D4ADD4485}.Release|x86.ActiveCfg = Release|Win32
+		{2A871123-A9CC-42CB-83D3-D67D4ADD4485}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

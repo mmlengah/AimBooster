@@ -2,6 +2,7 @@
 #include <iostream>
 #include <Windows.h>
 #include <stdexcept>
+#include <memory>
 
 struct Rect {
     int topLeftX;
@@ -14,347 +15,123 @@ struct Rect {
     }
 };
 
-class ScreenCapture {
+class ScreenShot {
 public:
-    ScreenCapture() {
-        // Get the screen dimensions
-        DEVMODE dm;
-        ZeroMemory(&dm, sizeof(dm));
-        dm.dmSize = sizeof(dm);
-        if (EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm)) {
-            screenShotArea.topLeftX = 0;
-            screenShotArea.topLeftY = 0;
-            screenShotArea.bottomRightX = dm.dmPelsWidth;
-            screenShotArea.bottomRightY = dm.dmPelsHeight;
-        }
-        else {
-            // Error: couldn't get resolution.
-        }
-        hScreenDC = GetDC(NULL);
-        hMemoryDC = CreateCompatibleDC(hScreenDC);
+    ScreenShot(const Rect& rect = Rect())
+        : rect((rect.bottomRightX == 0 && rect.bottomRightY == 0) ?
+            Rect(0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)) : rect) {
     }
 
-    ScreenCapture(Rect ssa) {
-        // Get the screen dimensions
-        DEVMODE dm;
-        ZeroMemory(&dm, sizeof(dm));
-        dm.dmSize = sizeof(dm);
-        if (EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm)) {
-            int screenWidth = dm.dmPelsWidth;
-            int screenHeight = dm.dmPelsHeight;
-
-            // Map the points to the active screen resolution
-            screenShotArea.topLeftX = (int)((double)ssa.topLeftX * screenWidth / dm.dmPelsWidth);
-            screenShotArea.topLeftY = (int)((double)ssa.topLeftY * screenHeight / dm.dmPelsHeight);
-            screenShotArea.bottomRightX = (int)((double)ssa.bottomRightX * screenWidth / dm.dmPelsWidth);
-            screenShotArea.bottomRightY = (int)((double)ssa.bottomRightY * screenHeight / dm.dmPelsHeight);
-        }
-        else {
-            // Error: couldn't get resolution.
-        }
-        hScreenDC = CreateDC(L"DISPLAY", NULL, NULL, NULL);
-        hMemoryDC = CreateCompatibleDC(hScreenDC);
+    cv::Mat screenshotColour() {
+        capture();
+        cv::Mat img3;
+        cv::cvtColor(img, img3, cv::COLOR_BGRA2BGR);
+        return img3;
     }
 
-    ~ScreenCapture() {
-        DeleteDC(hMemoryDC);
-        ReleaseDC(NULL, hScreenDC);
+    cv::Mat screenshotGreyScale() {
+        capture();
+        cv::Mat grey;
+        cv::cvtColor(img, grey, cv::COLOR_BGR2GRAY);
+        return grey;
+    }
+
+    void display(bool grayscale = false) {
+        cv::Mat dispImg = grayscale ? screenshotGreyScale() : screenshotColour();
+        const std::string windowName = "Display window";
+
+        // Create a window for display.
+        cv::namedWindow(windowName, cv::WINDOW_NORMAL);
+
+        // Set the window size to 600 x 400.
+        cv::resizeWindow(windowName, 600, 400);
+
+        // Move the window to the top left of the screen.
+        cv::moveWindow(windowName, 0, 0);
+
+        // Show our image inside the window.
+        cv::imshow(windowName, dispImg);
+
+        // Wait for a keystroke in the window
+        cv::waitKey(0);
     }
 
     Rect getRect() const {
-        return screenShotArea;
+        return rect;
     }
-
-    cv::Mat capture() {
-        int rect_width = screenShotArea.bottomRightX - screenShotArea.topLeftX;
-        int rect_height = screenShotArea.bottomRightY - screenShotArea.topLeftY;
-        HBITMAP hBitmap = CreateCompatibleBitmap(hScreenDC, rect_width, rect_height);
-        HBITMAP hOldBitmap = (HBITMAP)SelectObject(hMemoryDC, hBitmap);
-
-        BitBlt(hMemoryDC, 0, 0, rect_width, rect_height, hScreenDC, screenShotArea.topLeftX,
-            screenShotArea.topLeftY, SRCCOPY);
-        hBitmap = (HBITMAP)SelectObject(hMemoryDC, hOldBitmap);
-
-        cv::Mat mat = HBitmapToMat(hBitmap);
-        cv::cvtColor(mat, mat, cv::COLOR_BGRA2BGR);
-
+private:
+    void capture() {
+        HDC hScreen = GetDC(NULL);
+        HDC hDC = CreateCompatibleDC(hScreen);
+        HBITMAP hBitmap = CreateCompatibleBitmap(hScreen, rect.bottomRightX - rect.topLeftX, rect.bottomRightY - rect.topLeftY);
+        SelectObject(hDC, hBitmap);
+        BitBlt(hDC, 0, 0, rect.bottomRightX - rect.topLeftX, rect.bottomRightY - rect.topLeftY, hScreen, rect.topLeftX, rect.topLeftY, SRCCOPY);
+        BITMAPINFOHEADER bmi = { 0 };
+        bmi.biSize = sizeof(BITMAPINFOHEADER);
+        bmi.biPlanes = 1;
+        bmi.biBitCount = 32;
+        bmi.biWidth = rect.bottomRightX - rect.topLeftX;
+        bmi.biHeight = -rect.bottomRightY + rect.topLeftY;
+        bmi.biCompression = BI_RGB;
+        bmi.biSizeImage = 0;// 3 * rect.right * rect.bottom;
+        img.create(rect.bottomRightY - rect.topLeftY, rect.bottomRightX - rect.topLeftX, CV_8UC4);
+        GetDIBits(hDC, hBitmap, 0, rect.bottomRightY - rect.topLeftY, img.data, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
         DeleteObject(hBitmap);
-        SelectObject(hMemoryDC, hOldBitmap);
-
-        return mat;
-    }
-
-    cv::Point getCenter() const {
-        return cv::Point((screenShotArea.topLeftX + screenShotArea.bottomRightX) / 2,
-            (screenShotArea.topLeftY + screenShotArea.bottomRightY) / 2);
-    }
-
-    void show() {
-        cv::Mat frame = capture();
-
-        // Create a window to display the frame
-        cv::namedWindow("Frame", cv::WINDOW_NORMAL);
-
-        // Resize the window to match the frame size
-        cv::resizeWindow("Frame", frame.cols, frame.rows);
-
-        // Move the window to the top-left corner
-        cv::moveWindow("Frame", 0, 0);
-
-        // Show the frame in the window
-        cv::imshow("Frame", frame);
-
-        // Wait for a key press or window closure
-        while (true) {
-            int key = cv::waitKey(1);
-            if (key >= 0)
-                break;
-
-            // Check if the window is still open
-            if (cv::getWindowProperty("Frame", cv::WND_PROP_AUTOSIZE) < 0)
-                break;
-        }
-
-        // Destroy the window
-        cv::destroyWindow("Frame");
-    }
-
-private:
-    cv::Mat HBitmapToMat(HBITMAP hBitmap) {
-        BITMAP bmp;
-        GetObject(hBitmap, sizeof(BITMAP), &bmp);
-
-        BITMAPINFOHEADER bi;
-        bi.biSize = sizeof(BITMAPINFOHEADER);
-        bi.biWidth = bmp.bmWidth;
-        bi.biHeight = -bmp.bmHeight;  //This is the line that makes it draw upside down or not.
-        bi.biPlanes = 1;
-        bi.biBitCount = 32;
-        bi.biCompression = BI_RGB;
-        bi.biSizeImage = 0;
-        bi.biXPelsPerMeter = 0;
-        bi.biYPelsPerMeter = 0;
-        bi.biClrUsed = 0;
-        bi.biClrImportant = 0;
-
-        cv::Mat mat(cv::Size(bmp.bmWidth, bmp.bmHeight), CV_8UC4);
-        SelectObject(hMemoryDC, hBitmap);
-        GetDIBits(hMemoryDC, hBitmap, 0, bmp.bmHeight, mat.data, (BITMAPINFO*)&bi, DIB_RGB_COLORS);
-
-        return mat;
+        DeleteDC(hDC);
+        ReleaseDC(NULL, hScreen);
     }
 private:
-    HDC hScreenDC;
-    HDC hMemoryDC;
-    Rect screenShotArea;
+    cv::Mat img;
+    const Rect rect;
 };
 
-class Matcher {
+class TemplateMatcher {
 public:
-    Matcher(const std::string& filename, int matchMethod, double tolerance, Rect screenShotArea = Rect(), int matches = 1)
-        : matchMethod(matchMethod), tolerance(tolerance), consecutiveMatches(1), MAX_MATCHES(matches),
-        screenCapture(createScreenCapture(screenShotArea)) {
-        templateImage = cv::imread(filename, cv::IMREAD_COLOR);
-
-        if (templateImage.empty()) {
-            std::string errorMessage = "Failed to load the template image.";
-            std::cout << errorMessage << std::endl; // Log the error to the console
-            throw std::runtime_error(errorMessage); // Throw an exception
+    TemplateMatcher(const std::string& filePath, Rect ssa = Rect(), bool grayscale = false)
+    : grayscale(grayscale), 
+        ss((ssa.bottomRightX == 0 && ssa.bottomRightY == 0) ? new ScreenShot() : new ScreenShot(ssa))
+    {
+        templateImg = cv::imread(filePath, grayscale ? cv::IMREAD_GRAYSCALE : cv::IMREAD_COLOR);
+        if (templateImg.empty()) {
+            throw std::runtime_error("Could not open or find the template image!");
         }
     }
 
-    Matcher(const std::string& filename, double tolerance, Rect sreenShotArea = Rect(), int matches = 1)
-        : Matcher(filename, cv::TM_CCOEFF_NORMED, tolerance, sreenShotArea, matches) {
-    }
+    bool match(double tolerance, cv::Point* center = nullptr) const {
+        cv::Mat img = grayscale ? ss->screenshotGreyScale() : ss->screenshotColour();
 
-    Matcher(const std::string& filename, double tolerance, int matches)
-        : Matcher(filename, cv::TM_CCOEFF_NORMED, tolerance, Rect(), matches) {
-    }
-
-    Matcher(const std::string& filename, int matchMethod, double tolerance, int matches = 1)
-        : Matcher(filename, matchMethod, tolerance, Rect(), matches) {
-    }
-
-    bool templateMatch() {
-        cv::Mat frame = screenCapture.capture();
-
-        // Perform template matching
         cv::Mat result;
-        cv::matchTemplate(frame, templateImage, result, matchMethod);
-
-        double minVal, maxVal;
-        cv::Point minLoc, maxLoc;
-        cv::minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc);
-
-        cv::Point matchLoc;
-        if (matchMethod == cv::TM_SQDIFF || matchMethod == cv::TM_SQDIFF_NORMED) {
-            matchLoc = minLoc;
-        }
-        else {
-            matchLoc = maxLoc;
-        }
-
-        // Check if the match is within the defined tolerance
-        if (maxVal < tolerance) {
-            consecutiveMatches = 1;
-            return false; // Return invalid point if no match is found
-        }
-        else if (maxVal > tolerance && consecutiveMatches < MAX_MATCHES) {
-            consecutiveMatches++;
-            return false;
-        }
-        else {
-            consecutiveMatches = 1;
-            // Calculate the center of the matched region
-            return true;
-        }
-    }
-
-    bool templateMatch(cv::Point& center) {
-        cv::Mat frame = screenCapture.capture();
-
+        // Create the result matrix
+        int result_cols = img.cols - templateImg.cols + 1;
+        int result_rows = img.rows - templateImg.rows + 1;
+        result.create(result_rows, result_cols, CV_32FC1);
         // Perform template matching
-        cv::Mat result;
-        cv::matchTemplate(frame, templateImage, result, matchMethod);
+        matchTemplate(img, templateImg, result, cv::TM_CCORR_NORMED);
 
-        double minVal, maxVal;
-        cv::Point minLoc, maxLoc;
-        cv::minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc);
-
-        cv::Point matchLoc;
-        if (matchMethod == cv::TM_SQDIFF || matchMethod == cv::TM_SQDIFF_NORMED) {
-            matchLoc = minLoc;
-        }
-        else {
-            matchLoc = maxLoc;
-        }
-
-        // Check if the match is within the defined tolerance
-        if (maxVal < tolerance) {
-            consecutiveMatches = 0;
-            center = cv::Point(-1, -1);
-            return false; // Return invalid point if no match is found
-        }
-        else if (maxVal > tolerance && consecutiveMatches <= MAX_MATCHES) {
-            consecutiveMatches++;
-            center = cv::Point(-1, -1);
-            return false;
-        }
-        else {
-            consecutiveMatches = 0;
-            // Calculate the center of the matched region
-            center = cv::Point(matchLoc.x + templateImage.cols / 2, matchLoc.y + templateImage.rows / 2);
-            center.x += screenCapture.getRect().topLeftX;
-            center.y += screenCapture.getRect().topLeftY;
-            return true;
-        }
-    }
-
-    std::vector<cv::Point> templateMatchAll() {
-        cv::Mat frame = screenCapture.capture();
-
-        // Perform template matching
-        cv::Mat result;
-        cv::matchTemplate(frame, templateImage, result, matchMethod);
-        cv::threshold(result, result, tolerance, 1., cv::THRESH_TOZERO);  // Use a threshold on the result
-
-        std::vector<cv::Point> matchLocations;  // Vector to store all match locations
-
-        const double distThresh = 50; // You should set this threshold to the value that you consider "close"
-
-        while (true) {
-            double minval, maxval;
-            cv::Point minloc, maxloc;
-            cv::minMaxLoc(result, &minval, &maxval, &minloc, &maxloc);
-
-            // Stop if the max value is below the tolerance
-            if (maxval <= tolerance) {
-                break;
-            }
-
-            // Otherwise, store the match location and zero out that location in the result
-            cv::Point matchLoc = (matchMethod == cv::TM_SQDIFF || matchMethod == cv::TM_SQDIFF_NORMED) ? minloc : maxloc;
-
-            // Measure the distance to the previous match points
-            bool isClose = false;
-            for (const cv::Point& previousMatch : matchLocations) {
-                double dist = cv::norm(previousMatch - matchLoc);
-                if (dist < distThresh) {
-                    isClose = true;
-                    break;
-                }
-            }
-
-            cv::Point matchLocAdjusted = matchLoc + cv::Point(screenCapture.getRect().topLeftX,
-                screenCapture.getRect().topLeftY);
-
-            // If the match is not close to any previous match, store it
-            if (!isClose) {
-                matchLocations.push_back(matchLocAdjusted);
-            }
-
-            result.at<float>(matchLoc.y, matchLoc.x) = 0;
-        }
-
-        // Return all match locations
-        return matchLocations;
-    }
-
+        double minVal; double maxVal; cv::Point minLoc; cv::Point maxLoc;
+        minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat());
 
 #ifdef _DEBUG
-    bool checkTolerance() {
-        cv::Mat frame = screenCapture.capture();
-
-        // Perform template matching
-        cv::Mat result;
-        cv::matchTemplate(frame, templateImage, result, matchMethod);
-
-        double minVal, maxVal;
-        cv::Point minLoc, maxLoc;
-        cv::minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc);
-
-        cv::Point matchLoc;
-        if (matchMethod == cv::TM_SQDIFF || matchMethod == cv::TM_SQDIFF_NORMED) {
-            matchLoc = minLoc;
-        }
-        else {
-            matchLoc = maxLoc;
-        }
-
-        std::cout << maxVal << ", " << tolerance << std::endl;
-        // Check if the match is within the defined tolerance
-        if (maxVal < tolerance) {
-            consecutiveMatches = 1;
-            return false; // Return invalid point if no match is found
-        }
-        else if (maxVal > tolerance && consecutiveMatches < MAX_MATCHES) {
-            consecutiveMatches++;
-            return false;
-        }
-        else {
-            consecutiveMatches = 1;
-            // Calculate the center of the matched region
+        std::cout << maxVal << std::endl;
+#endif
+        if (maxVal > tolerance) {
+            // Add half of the template's dimensions to maxLoc to find the center
+            if (center) {
+                *center = cv::Point(maxLoc.x + templateImg.cols / 2, maxLoc.y + templateImg.rows / 2);
+                (*center).x += ss->getRect().topLeftX;
+                (*center).y += ss->getRect().topLeftY;
+            }
             return true;
         }
-    }
-#endif
-private:
-    static ScreenCapture createScreenCapture(Rect ssa) {
-        if (ssa.topLeftX == 0 && ssa.topLeftY == 0 && ssa.bottomRightX == 0 && ssa.bottomRightY == 0) {
-            return ScreenCapture();
-        }
-        else {
-            return ScreenCapture(ssa);
-        }
+
+        return false;
     }
 private:
-    cv::Mat templateImage;
-    int matchMethod;
-    double tolerance;
-    ScreenCapture screenCapture;
-    int consecutiveMatches;
-    const int MAX_MATCHES;
+    cv::Mat templateImg;
+    bool grayscale;
+    std::unique_ptr<ScreenShot> ss;
 };
+
 
 class EscapeKeyChecker {
 public:
@@ -408,22 +185,15 @@ int main() {
     EscapeKeyChecker checker(run);
     checker.startChecking();
 
-    Matcher target("images/target.png", 0.70, Rect(391, 244, 1006, 678));
+    auto target = std::make_unique<TemplateMatcher>("images/target1.png", Rect(391, 245, 999, 671));
 
-    std::chrono::steady_clock::time_point lastClickTime = std::chrono::steady_clock::now();
-
-    while (run.load()) {
-        std::vector<cv::Point> matches = target.templateMatchAll();
-        if (!matches.empty()) {
-            for (cv::Point& targetCenter : matches) {
-                std::chrono::steady_clock::time_point currentTime = std::chrono::steady_clock::now();
-                std::chrono::milliseconds timeSinceLastClick = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastClickTime);
-                std::cout << "Time between clicks: " << timeSinceLastClick.count() << " ms" << std::endl;
-                ClickScreen(targetCenter.x, targetCenter.y);
-                lastClickTime = currentTime;
-            }                      
+    while (run.load()) {     
+        cv::Point center;
+        if (target->match(0.96, &center)) {
+            //std::cout << center.x << ", " << center.y << std::endl;
+            ClickScreen(center.x, center.y);
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(70));
     }
 
     checker.stopChecking();

@@ -10,3 +10,6 @@ This repository is for experimenting with various image recognition techniques u
  - check for target
  - if target click it
  - repeat
+
+ # Results 
+ Managed to click the target for 3 minutes before failing see the results here: http://www.aimbooster.com/result/8L1O47h
