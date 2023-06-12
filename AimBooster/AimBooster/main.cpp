@@ -88,25 +88,39 @@ private:
 class TemplateMatcher {
 public:
     TemplateMatcher(const std::string& filePath, Rect ssa = Rect(), bool grayscale = false)
-    : grayscale(grayscale), 
-        ss((ssa.bottomRightX == 0 && ssa.bottomRightY == 0) ? new ScreenShot() : new ScreenShot(ssa))
     {
+        if (ss == nullptr) {
+            ss = std::make_unique<ScreenShot>((ssa.bottomRightX == 0 && ssa.bottomRightY == 0) ?
+                Rect() : ssa);
+            img = ss->screenshotColour();
+        }
+
         templateImg = cv::imread(filePath, grayscale ? cv::IMREAD_GRAYSCALE : cv::IMREAD_COLOR);
         if (templateImg.empty()) {
             throw std::runtime_error("Could not open or find the template image!");
         }
     }
 
-    bool match(double tolerance, cv::Point* center = nullptr) const {
-        cv::Mat img = grayscale ? ss->screenshotGreyScale() : ss->screenshotColour();
+    static void takess(bool grayscale = false) {
+        img = grayscale ? ss->screenshotGreyScale() : ss->screenshotColour();
+    }
+
+    bool match(double tolerance, cv::Point* center = nullptr) const {     
+        // Define a Region of Interest within the image
+        cv::Rect roi(ss->getRect().topLeftX, ss->getRect().topLeftY,
+            ss->getRect().bottomRightX - ss->getRect().topLeftX,
+            ss->getRect().bottomRightY - ss->getRect().topLeftY);
+
+        cv::Mat imgROI = img(roi);
 
         cv::Mat result;
         // Create the result matrix
-        int result_cols = img.cols - templateImg.cols + 1;
-        int result_rows = img.rows - templateImg.rows + 1;
+        int result_cols = imgROI.cols - templateImg.cols + 1;
+        int result_rows = imgROI.rows - templateImg.rows + 1;
         result.create(result_rows, result_cols, CV_32FC1);
+
         // Perform template matching
-        matchTemplate(img, templateImg, result, cv::TM_CCORR_NORMED);
+        matchTemplate(imgROI, templateImg, result, cv::TM_CCORR_NORMED);
 
         double minVal; double maxVal; cv::Point minLoc; cv::Point maxLoc;
         minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat());
@@ -116,20 +130,22 @@ public:
 #endif
         if (maxVal > tolerance) {
             // Add half of the template's dimensions to maxLoc to find the center
+            // Also add the top left coordinates of the ROI to account for the offset
             if (center) {
-                *center = cv::Point(maxLoc.x + templateImg.cols / 2, maxLoc.y + templateImg.rows / 2);
-                (*center).x += ss->getRect().topLeftX;
-                (*center).y += ss->getRect().topLeftY;
+                *center = cv::Point(maxLoc.x + templateImg.cols / 2 + ss->getRect().topLeftX,
+                    maxLoc.y + templateImg.rows / 2 + ss->getRect().topLeftY);
             }
             return true;
         }
 
         return false;
     }
+
 private:
     cv::Mat templateImg;
-    bool grayscale;
-    std::unique_ptr<ScreenShot> ss;
+    static inline cv::Mat img;
+    static inline std::unique_ptr<ScreenShot> ss = nullptr;
+
 };
 
 
@@ -187,10 +203,10 @@ int main() {
 
     auto target = std::make_unique<TemplateMatcher>("images/target1.png", Rect(391, 245, 999, 671));
 
-    while (run.load()) {     
+    while (run.load()) {    
+        TemplateMatcher::takess();
         cv::Point center;
         if (target->match(0.96, &center)) {
-            //std::cout << center.x << ", " << center.y << std::endl;
             ClickScreen(center.x, center.y);
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(70));
