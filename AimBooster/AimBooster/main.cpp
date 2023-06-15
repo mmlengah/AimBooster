@@ -1,8 +1,7 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <Windows.h>
-#include <stdexcept>
-#include <memory>
+#include <chrono>
 
 struct Rect {
     int topLeftX;
@@ -13,7 +12,16 @@ struct Rect {
     Rect(int x1 = 0, int y1 = 0, int x2 = 0, int y2 = 0)
         : topLeftX(x1), topLeftY(y1), bottomRightX(x2), bottomRightY(y2) {
     }
+
+    int getWidth() const {
+        return bottomRightX - topLeftX + 1;
+    }
+
+    int getHeight() const {
+        return bottomRightY - topLeftY + 1;
+    }
 };
+
 
 class ScreenShot {
 public:
@@ -37,10 +45,6 @@ public:
         cv::imshow(windowName, std::move(dispImg));
         cv::waitKey(0);
     }
-
-    Rect getRect() const {
-        return rect;
-    }
 private:
     void capture() {
         HDC hScreen = GetDC(NULL);
@@ -56,73 +60,130 @@ private:
         ReleaseDC(NULL, hScreen);
     }
 private:
-    cv::Mat img;
     const Rect rect;
+    cv::Mat img;
 };
 
-class TemplateMatcher {
+struct Color {
+    int red;
+    int green;
+    int blue;
+
+    Color(int r = 0, int g = 0, int b = 0) {
+        red = (r >= 0 && r <= 255) ? r : 0;
+        green = (g >= 0 && g <= 255) ? g : 0;
+        blue = (b >= 0 && b <= 255) ? b : 0;
+    }
+
+    operator cv::Vec3b() const {
+        return cv::Vec3b(blue, green, red);
+    }
+};
+
+
+class ClickPixel {
 public:
-    TemplateMatcher(const std::string& filePath, Rect ssa = Rect(), bool grayscale = false)
-    {
-        if (ss == nullptr) {
-            ss = std::make_unique<ScreenShot>((ssa.bottomRightX == 0 && ssa.bottomRightY == 0) ?
-                Rect() : ssa);
-            img = ss->captureScreen();
+    ClickPixel(Color targetColor, Rect rect = Rect(), int radius = 1)
+        : targetColor(targetColor), rect((rect.bottomRightX == 0 && rect.bottomRightY == 0) ?
+            Rect(0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)) : rect), radius(radius) {
+        if (!img) {
+            img = std::make_unique<cv::Mat>();
         }
-
-        templateImg = cv::imread(filePath, grayscale ? cv::IMREAD_GRAYSCALE : cv::IMREAD_COLOR);
-        if (templateImg.empty()) {
-            throw std::runtime_error("Could not open or find the template image!");
+        if (!ss) {
+            ss = std::make_unique<ScreenShot>();
         }
     }
 
-    static void takess(bool grayscale = false) {
-        img = grayscale ? ss->screenshotGreyScale() : ss->captureScreen();
-    }
+    void process() {
+        // Loop through the image pixels within the specified rectangle
+        for (int y = rect.topLeftY; y <= rect.bottomRightY; y++) {
+            for (int x = rect.topLeftX; x <= rect.bottomRightX; x++) {
+                // Check if the pixel color matches the given color
+                if (isPixelColor(x, y)) {
+                    clickScreen(x, y);
 
-    bool match(double tolerance, cv::Point* center = nullptr) const {     
-        // Define a Region of Interest within the image
-        cv::Rect roi(ss->getRect().topLeftX, ss->getRect().topLeftY,
-            ss->getRect().bottomRightX - ss->getRect().topLeftX,
-            ss->getRect().bottomRightY - ss->getRect().topLeftY);
-
-        cv::Mat imgROI = img(roi);
-
-        cv::Mat result;
-        // Create the result matrix
-        int result_cols = imgROI.cols - templateImg.cols + 1;
-        int result_rows = imgROI.rows - templateImg.rows + 1;
-        result.create(result_rows, result_cols, CV_32FC1);
-
-        // Perform template matching
-        matchTemplate(imgROI, templateImg, result, cv::TM_CCORR_NORMED);
-
-        double minVal; double maxVal; cv::Point minLoc; cv::Point maxLoc;
-        minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat());
-
-#ifdef _DEBUG
-        std::cout << maxVal << std::endl;
-#endif
-        if (maxVal > tolerance) {
-            // Add half of the template's dimensions to maxLoc to find the center
-            // Also add the top left coordinates of the ROI to account for the offset
-            if (center) {
-                *center = cv::Point(maxLoc.x + templateImg.cols / 2 + ss->getRect().topLeftX,
-                    maxLoc.y + templateImg.rows / 2 + ss->getRect().topLeftY);
+                    // Skip the next 'radius' pixels in both directions
+                    x += radius;
+                    y += radius;
+                }
             }
-            return true;
         }
-
-        return false;
     }
 
+
+    void show(bool fullsize = false) {
+        // Start the timer
+        std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
+        // Define ROI
+        cv::Rect roi(rect.topLeftX, rect.topLeftY, rect.getWidth(), rect.getHeight());
+
+        // Create a mask the same size as the ROI, all white (i.e., unmasked)
+        cv::Mat mask = cv::Mat::ones(roi.size(), CV_8U) * 255;
+
+        // Create an image for the ROI with the same size as the ROI
+        cv::Mat roi_img = cv::Mat::zeros(roi.size(), img->type());
+
+        // Copy the ROI from the original image to the new image using the mask
+        img->operator()(roi).copyTo(roi_img, mask);
+
+        for (int y = 0; y < roi_img.rows; y++) {
+            for (int x = 0; x < roi_img.cols; x++) {
+                // Check if the pixel color matches the given color                
+                if (isPixelColor(x + rect.topLeftX, y + rect.topLeftY)) {
+                    roi_img.at<cv::Vec3b>(y, x) = cv::Vec3b(255, 0, 0);
+                    // Skip the next 'radius' pixels in both directions
+                    x += radius;
+                    y += radius;
+                }
+            }
+        }
+
+        // Stop the timer
+        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
+        // Calculate the elapsed time in milliseconds
+        double elapsedTime = static_cast<double>(std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
+
+        std::cout << "Processing time: " << elapsedTime << " ms" << std::endl;
+
+
+        // Resize the image
+        if (!fullsize) {
+            cv::resize(roi_img, roi_img, cv::Size(640, 480));
+        }
+
+        // Display the ROI image
+        cv::imshow("ROI Image", roi_img);
+        cv::waitKey(0);
+    }
+
+    static void take() {
+        cv::Mat tempMat = ss->captureScreen();
+        img = std::make_unique<cv::Mat>(tempMat.clone());
+    }
 private:
-    cv::Mat templateImg;
-    static inline cv::Mat img;
+    cv::Vec3b targetColor;
+    int radius;
+    const Rect rect;
+    static inline std::unique_ptr<cv::Mat> img = nullptr;
     static inline std::unique_ptr<ScreenShot> ss = nullptr;
 
-};
+    bool isPixelColor(int x, int y) {
+        return img->at<cv::Vec3b>(y, x) == targetColor;
+    }
 
+    void clickScreen(int x, int y) {
+        // Set the mouse position
+        SetCursorPos(x, y);
+
+        // Simulate a left mouse button down event
+        mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+
+        // Simulate a left mouse button up event
+        mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+    }
+};
 
 class EscapeKeyChecker {
 public:
@@ -159,32 +220,19 @@ private:
     }
 };
 
-void ClickScreen(int x, int y)
-{
-    // Set the mouse position
-    SetCursorPos(x, y);
-
-    // Simulate a left mouse button down event
-    mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
-
-    // Simulate a left mouse button up event
-    mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-}
 
 int main() {
+    Sleep(1000);
     std::atomic<bool> run(true);
     EscapeKeyChecker checker(run);
     checker.startChecking();
-
-    auto target = std::make_unique<TemplateMatcher>("images/target1.png", Rect(391, 245, 999, 671));
-
+    
+    ClickPixel target(Color(255, 219, 195), Rect(392, 243, 1002, 674), 15);
+    
     while (run.load()) {    
-        TemplateMatcher::takess();
-        cv::Point center;
-        if (target->match(0.96, &center)) {
-            ClickScreen(center.x, center.y);
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(70));
+        ClickPixel::take();
+        target.process();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     checker.stopChecking();
