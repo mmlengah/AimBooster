@@ -12,5 +12,5 @@ This repository is for experimenting with various image recognition techniques u
  - repeat
 
  # Results 
- http://www.aimbooster.com/result/8L1O47h - using template matching
- http://aimbooster.com/result/2YdJQEP - checking each pixel and clicking if it is a certain colour
+ - http://www.aimbooster.com/result/8L1O47h - using template matching
+ - http://aimbooster.com/result/2YdJQEP - checking each pixel and clicking if it is a certain colour
