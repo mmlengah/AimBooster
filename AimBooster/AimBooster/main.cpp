@@ -19,40 +19,22 @@ class ScreenShot {
 public:
     ScreenShot(const Rect& rect = Rect())
         : rect((rect.bottomRightX == 0 && rect.bottomRightY == 0) ?
-            Rect(0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)) : rect) {
-    }
+            Rect(0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)) : rect) {}
 
-    cv::Mat screenshotColour() {
+    cv::Mat captureScreen() {
         capture();
         cv::Mat img3;
-        cv::cvtColor(img, img3, cv::COLOR_BGRA2BGR);
+        cv::cvtColor(std::move(img), img3, cv::COLOR_BGRA2BGR);
         return img3;
     }
 
-    cv::Mat screenshotGreyScale() {
-        capture();
-        cv::Mat grey;
-        cv::cvtColor(img, grey, cv::COLOR_BGR2GRAY);
-        return grey;
-    }
-
-    void display(bool grayscale = false) {
-        cv::Mat dispImg = grayscale ? screenshotGreyScale() : screenshotColour();
+    void display() {
+        cv::Mat dispImg = captureScreen();
         const std::string windowName = "Display window";
-
-        // Create a window for display.
         cv::namedWindow(windowName, cv::WINDOW_NORMAL);
-
-        // Set the window size to 600 x 400.
         cv::resizeWindow(windowName, 600, 400);
-
-        // Move the window to the top left of the screen.
         cv::moveWindow(windowName, 0, 0);
-
-        // Show our image inside the window.
-        cv::imshow(windowName, dispImg);
-
-        // Wait for a keystroke in the window
+        cv::imshow(windowName, std::move(dispImg));
         cv::waitKey(0);
     }
 
@@ -66,14 +48,7 @@ private:
         HBITMAP hBitmap = CreateCompatibleBitmap(hScreen, rect.bottomRightX - rect.topLeftX, rect.bottomRightY - rect.topLeftY);
         SelectObject(hDC, hBitmap);
         BitBlt(hDC, 0, 0, rect.bottomRightX - rect.topLeftX, rect.bottomRightY - rect.topLeftY, hScreen, rect.topLeftX, rect.topLeftY, SRCCOPY);
-        BITMAPINFOHEADER bmi = { 0 };
-        bmi.biSize = sizeof(BITMAPINFOHEADER);
-        bmi.biPlanes = 1;
-        bmi.biBitCount = 32;
-        bmi.biWidth = rect.bottomRightX - rect.topLeftX;
-        bmi.biHeight = -rect.bottomRightY + rect.topLeftY;
-        bmi.biCompression = BI_RGB;
-        bmi.biSizeImage = 0;// 3 * rect.right * rect.bottom;
+        BITMAPINFOHEADER bmi = { sizeof(BITMAPINFOHEADER), rect.bottomRightX - rect.topLeftX, -rect.bottomRightY + rect.topLeftY, 1, 32, BI_RGB, 0 };
         img.create(rect.bottomRightY - rect.topLeftY, rect.bottomRightX - rect.topLeftX, CV_8UC4);
         GetDIBits(hDC, hBitmap, 0, rect.bottomRightY - rect.topLeftY, img.data, (BITMAPINFO*)&bmi, DIB_RGB_COLORS);
         DeleteObject(hBitmap);
@@ -92,7 +67,7 @@ public:
         if (ss == nullptr) {
             ss = std::make_unique<ScreenShot>((ssa.bottomRightX == 0 && ssa.bottomRightY == 0) ?
                 Rect() : ssa);
-            img = ss->screenshotColour();
+            img = ss->captureScreen();
         }
 
         templateImg = cv::imread(filePath, grayscale ? cv::IMREAD_GRAYSCALE : cv::IMREAD_COLOR);
@@ -102,7 +77,7 @@ public:
     }
 
     static void takess(bool grayscale = false) {
-        img = grayscale ? ss->screenshotGreyScale() : ss->screenshotColour();
+        img = grayscale ? ss->screenshotGreyScale() : ss->captureScreen();
     }
 
     bool match(double tolerance, cv::Point* center = nullptr) const {     

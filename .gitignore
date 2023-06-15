@@ -33,6 +33,7 @@
 
 # Ignored directories
 packages/
+benchmark/
 
 # Visual Studio IntelliSense .ipch files
 *.ipch
