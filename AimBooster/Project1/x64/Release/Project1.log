@@ -1,3 +1,0 @@
-﻿  main.cpp
-MSVCRT.lib(exe_main.obj) : error LNK2001: unresolved external symbol main
-D:\GitHub\AimBooster\AimBooster\x64\Release\Project1.exe : fatal error LNK1120: 1 unresolved externals

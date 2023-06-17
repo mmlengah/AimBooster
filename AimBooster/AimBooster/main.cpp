@@ -2,6 +2,7 @@
 #include <iostream>
 #include <Windows.h>
 #include <chrono>
+#include <functional>
 
 struct Rect {
     int topLeftX;
@@ -94,13 +95,15 @@ public:
         }
     }
 
-    void process() {
+    template <typename Func>
+    void process(Func&& func) {
         // Loop through the image pixels within the specified rectangle
         for (int y = rect.topLeftY; y <= rect.bottomRightY; y++) {
             for (int x = rect.topLeftX; x <= rect.bottomRightX; x++) {
                 // Check if the pixel color matches the given color
                 if (isPixelColor(x, y)) {
-                    clickScreen(x, y);
+                    //lambda function here that can use x and y
+                    func(x, y);
 
                     // Skip the next 'radius' pixels in both directions
                     x += radius;
@@ -109,7 +112,6 @@ public:
             }
         }
     }
-
 
     void show(bool fullsize = false) {
         // Start the timer
@@ -172,17 +174,6 @@ private:
     bool isPixelColor(int x, int y) {
         return img->at<cv::Vec3b>(y, x) == targetColor;
     }
-
-    void clickScreen(int x, int y) {
-        // Set the mouse position
-        SetCursorPos(x, y);
-
-        // Simulate a left mouse button down event
-        mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
-
-        // Simulate a left mouse button up event
-        mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-    }
 };
 
 class EscapeKeyChecker {
@@ -220,6 +211,17 @@ private:
     }
 };
 
+std::function<void(int, int)> clickScreen = [](int x, int y) {
+    // Set the mouse position
+    SetCursorPos(x, y);
+
+    // Simulate a left mouse button down event
+    mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+
+    // Simulate a left mouse button up event
+    mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+};
+
 
 int main() {
     Sleep(1000);
@@ -231,7 +233,7 @@ int main() {
     
     while (run.load()) {    
         ClickPixel::take();
-        target.process();
+        target.process(clickScreen);
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
