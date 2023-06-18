@@ -3,6 +3,9 @@
 #include <Windows.h>
 #include <chrono>
 #include <functional>
+#include <conio.h>
+#include <vector>
+#include <variant>
 
 struct Rect {
     int topLeftX;
@@ -22,7 +25,6 @@ struct Rect {
         return bottomRightY - topLeftY + 1;
     }
 };
-
 
 class ScreenShot {
 public:
@@ -79,14 +81,33 @@ struct Color {
     operator cv::Vec3b() const {
         return cv::Vec3b(blue, green, red);
     }
-};
 
+    static std::vector<cv::Vec3b> toVec3b(const std::vector<Color>& colors) {
+        std::vector<cv::Vec3b> vecs;
+        vecs.reserve(colors.size());
+        for (const Color& color : colors) {
+            vecs.push_back(color);  // uses overloaded operator
+        }
+        return vecs;
+    }
+
+    static std::vector<cv::Vec3b> toVec3b(const Color& color) {
+        std::vector<cv::Vec3b> vecs;
+        vecs.push_back(color);
+        return vecs;
+    }
+};
 
 class ClickPixel {
 public:
-    ClickPixel(Color targetColor, Rect rect = Rect(), int radius = 1)
-        : targetColor(targetColor), rect((rect.bottomRightX == 0 && rect.bottomRightY == 0) ?
+    ClickPixel(std::variant<Color, std::vector<Color>> targetColors, Rect rect = Rect(), int radius = 1)
+        : rect((rect.bottomRightX == 0 && rect.bottomRightY == 0) ?
             Rect(0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)) : rect), radius(radius) {
+
+        targetColor = std::holds_alternative<Color>(targetColors) ? 
+            Color::toVec3b(std::get<Color>(targetColors)) : 
+            Color::toVec3b(std::get<std::vector<Color>>(targetColors));
+
         if (!img) {
             img = std::make_unique<cv::Mat>();
         }
@@ -99,9 +120,17 @@ public:
     void process(Func&& func) {
         // Loop through the image pixels within the specified rectangle
         for (int y = rect.topLeftY; y <= rect.bottomRightY; y++) {
-            for (int x = rect.topLeftX; x <= rect.bottomRightX; x++) {
+            for (int x = rect.topLeftX; x <= rect.bottomRightX - targetColor.size(); x++) {
+                bool allTrue = true;
                 // Check if the pixel color matches the given color
-                if (isPixelColor(x, y)) {
+                for (int index = 0; index < targetColor.size(); ++index) {
+                    if (!isPixelColor(x + index, y, targetColor[index])) {
+                        allTrue = false;
+                        break;
+                    }
+                }
+                
+                if (allTrue) {
                     //lambda function here that can use x and y
                     func(x, y);
 
@@ -131,9 +160,19 @@ public:
 
         for (int y = 0; y < roi_img.rows; y++) {
             for (int x = 0; x < roi_img.cols; x++) {
-                // Check if the pixel color matches the given color                
-                if (isPixelColor(x + rect.topLeftX, y + rect.topLeftY)) {
+                bool allTrue = true;
+                // Check if the pixel color matches the given color
+                for (int index = 0; index < targetColor.size(); ++index) {
+                    if (!isPixelColor(x + index, y, targetColor[index])) {
+                        allTrue = false;
+                        break;
+                    }
+                }
+
+                if (allTrue) {
+                    //lambda function here that can use x and y
                     roi_img.at<cv::Vec3b>(y, x) = cv::Vec3b(255, 0, 0);
+
                     // Skip the next 'radius' pixels in both directions
                     x += radius;
                     y += radius;
@@ -165,55 +204,32 @@ public:
         img = std::make_unique<cv::Mat>(tempMat.clone());
     }
 private:
-    cv::Vec3b targetColor;
+    std::vector<cv::Vec3b> targetColor;
     int radius;
     const Rect rect;
     static inline std::unique_ptr<cv::Mat> img = nullptr;
     static inline std::unique_ptr<ScreenShot> ss = nullptr;
 
-    bool isPixelColor(int x, int y) {
-        return img->at<cv::Vec3b>(y, x) == targetColor;
+    bool isPixelColor(int x, int y, cv::Vec3b color) {
+        return img->at<cv::Vec3b>(y, x) == color;
     }
 };
 
-class EscapeKeyChecker {
-public:
-    EscapeKeyChecker(std::atomic<bool>& escapePressedRef) : escapePressed(escapePressedRef) {}
-
-    void startChecking()
-    {
-        escapeThread = std::thread(&EscapeKeyChecker::checkEscapePressed, this);
-    }
-
-    void stopChecking()
-    {
-        escapePressed.store(false);
-        if (escapeThread.joinable())
-            escapeThread.join();
-    }
-
-private:
-    std::atomic<bool>& escapePressed;
-    std::thread escapeThread;
-
-    void checkEscapePressed()
-    {
-        while (true)
-        {
-            // Check if escape key has been pressed
-            if (GetAsyncKeyState(VK_ESCAPE) & 0x8000)
-            {
-                escapePressed.store(false);
-                break;
+void checkForExit(std::atomic<bool>& running) {
+    while (running) {
+        if (_kbhit()) {
+            int key = _getch();
+            // If the user presses the Escape key (ASCII value is 27), stop the program
+            if (key == 27) { 
+                running = false;
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(25));
         }
     }
-};
+}
 
 std::function<void(int, int)> clickScreen = [](int x, int y) {
     // Set the mouse position
-    SetCursorPos(x, y);
+    SetCursorPos(x + 3, y);
 
     // Simulate a left mouse button down event
     mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
@@ -222,14 +238,13 @@ std::function<void(int, int)> clickScreen = [](int x, int y) {
     mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 };
 
-
 int main() {
     Sleep(1000);
     std::atomic<bool> run(true);
-    EscapeKeyChecker checker(run);
-    checker.startChecking();
+    std::thread exitThread(checkForExit, std::ref(run));
     
-    ClickPixel target(Color(255, 219, 195), Rect(392, 243, 1002, 674), 15);
+    std::vector<Color> colors = { Color(255,219,195), Color(255,219,195),  Color(255,219,195),  Color(255,219,195) };
+    ClickPixel target(colors, Rect(392, 243, 1002, 674), 15);
     
     while (run.load()) {    
         ClickPixel::take();
@@ -237,7 +252,7 @@ int main() {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
-    checker.stopChecking();
+    exitThread.join();
 
     return 0;
 }
