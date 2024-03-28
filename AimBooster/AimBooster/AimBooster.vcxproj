@@ -128,11 +128,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ApplicationStopper.cpp" />
+    <ClCompile Include="ColorSelector.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ScreenCapture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationStopper.h" />
+    <ClInclude Include="ColorSelector.h" />
     <ClInclude Include="Keys.h" />
     <ClInclude Include="ScreenCapture.h" />
   </ItemGroup>

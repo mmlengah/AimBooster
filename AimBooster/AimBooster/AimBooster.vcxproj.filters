@@ -27,6 +27,9 @@
     <ClCompile Include="ScreenCapture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ColorSelector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationStopper.h">
@@ -36,6 +39,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ScreenCapture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ColorSelector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
