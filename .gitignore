@@ -37,3 +37,6 @@ benchmark/
 
 # Visual Studio IntelliSense .ipch files
 *.ipch
+
+# Ignore BMP files
+*.bmp
