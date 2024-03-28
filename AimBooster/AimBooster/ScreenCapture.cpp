@@ -3,15 +3,13 @@
 
 #pragma comment(lib, "Shcore.lib")
 
-ScreenCapture::ScreenCapture() {
+ScreenCapture::ScreenCapture() : hBitmapPtr(nullptr, DeleteObjectFunc) {
 
 }
 
-bool ScreenCapture::CaptureScreenToFile(LPCWSTR filename) {
-    // Make the process DPI aware
+bool ScreenCapture::CaptureScreen() {
     SetProcessDPIAware();
 
-    // Obtain the screen's resolution
     HDC hScreenDC = GetDC(NULL);
     HDC hMemoryDC = CreateCompatibleDC(hScreenDC);
     int width = GetSystemMetrics(SM_CXSCREEN);
@@ -20,14 +18,42 @@ bool ScreenCapture::CaptureScreenToFile(LPCWSTR filename) {
     SelectObject(hMemoryDC, hBitmap);
     BitBlt(hMemoryDC, 0, 0, width, height, hScreenDC, 0, 0, SRCCOPY);
 
-    bool result = SaveBitmapToFile(hBitmap, filename);
+    hBitmapPtr = std::shared_ptr<HBITMAP>(new HBITMAP(hBitmap), HBitmapDeleter());
 
     // Cleanup
-    DeleteObject(hBitmap);
+    DeleteDC(hMemoryDC);
+    ReleaseDC(NULL, hScreenDC);
+
+    return hBitmapPtr != nullptr;
+}
+
+bool ScreenCapture::CaptureScreenToFile(LPCWSTR filename) {
+    SetProcessDPIAware();
+
+    HDC hScreenDC = GetDC(NULL);
+    HDC hMemoryDC = CreateCompatibleDC(hScreenDC);
+    int width = GetSystemMetrics(SM_CXSCREEN);
+    int height = GetSystemMetrics(SM_CYSCREEN);
+    HBITMAP hBitmap = CreateCompatibleBitmap(hScreenDC, width, height);
+    SelectObject(hMemoryDC, hBitmap);
+    BitBlt(hMemoryDC, 0, 0, width, height, hScreenDC, 0, 0, SRCCOPY);
+
+    hBitmapPtr = std::shared_ptr<HBITMAP>(new HBITMAP(hBitmap), HBitmapDeleter());
+
+    bool result = SaveBitmapToFile(hBitmap, filename);
+
     DeleteDC(hMemoryDC);
     ReleaseDC(NULL, hScreenDC);
 
     return result;
+}
+
+std::shared_ptr<HBITMAP> ScreenCapture::GetBitmap() const {
+    return hBitmapPtr;
+}
+
+void ScreenCapture::DeleteObjectFunc(HGDIOBJ obj) {
+    DeleteObject(obj);
 }
 
 bool ScreenCapture::SaveBitmapToFile(HBITMAP hBitmap, LPCWSTR filename) {
