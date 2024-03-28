@@ -3,7 +3,7 @@
 
 #pragma comment(lib, "Shcore.lib")
 
-ScreenCapture::ScreenCapture() : hBitmapPtr(nullptr, DeleteObjectFunc) {
+ScreenCapture::ScreenCapture() : hBitmapPtr(nullptr) {
 
 }
 
@@ -18,7 +18,7 @@ bool ScreenCapture::CaptureScreen() {
     SelectObject(hMemoryDC, hBitmap);
     BitBlt(hMemoryDC, 0, 0, width, height, hScreenDC, 0, 0, SRCCOPY);
 
-    hBitmapPtr = std::shared_ptr<HBITMAP>(new HBITMAP(hBitmap), HBitmapDeleter());
+    hBitmapPtr = MakeHBitmapSharedPtr(HBITMAP(hBitmap));
 
     // Cleanup
     DeleteDC(hMemoryDC);
@@ -38,7 +38,7 @@ bool ScreenCapture::CaptureScreenToFile(LPCWSTR filename) {
     SelectObject(hMemoryDC, hBitmap);
     BitBlt(hMemoryDC, 0, 0, width, height, hScreenDC, 0, 0, SRCCOPY);
 
-    hBitmapPtr = std::shared_ptr<HBITMAP>(new HBITMAP(hBitmap), HBitmapDeleter());
+    hBitmapPtr = MakeHBitmapSharedPtr(HBITMAP(hBitmap));
 
     bool result = SaveBitmapToFile(hBitmap, filename);
 
@@ -50,10 +50,6 @@ bool ScreenCapture::CaptureScreenToFile(LPCWSTR filename) {
 
 std::shared_ptr<HBITMAP> ScreenCapture::GetBitmap() const {
     return hBitmapPtr;
-}
-
-void ScreenCapture::DeleteObjectFunc(HGDIOBJ obj) {
-    DeleteObject(obj);
 }
 
 bool ScreenCapture::SaveBitmapToFile(HBITMAP hBitmap, LPCWSTR filename) {
