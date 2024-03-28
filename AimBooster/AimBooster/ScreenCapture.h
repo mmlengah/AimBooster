@@ -2,15 +2,7 @@
 
 #include <windows.h>
 #include <memory> 
-
-struct HBitmapDeleter {
-    void operator()(HBITMAP* ptr) {
-        if (ptr && *ptr) {
-            DeleteObject(*ptr);
-            delete ptr;
-        }
-    }
-};
+#include "HBitmapPointer.h"
 
 class ScreenCapture {
 public:
@@ -18,8 +10,7 @@ public:
     bool CaptureScreen(); 
     bool CaptureScreenToFile(LPCWSTR filename); 
     bool SaveBitmapToFile(HBITMAP hBitmap, LPCWSTR filename);
-    std::shared_ptr<HBITMAP> GetBitmap() const;
+    HBitmapSharedPtr GetBitmap() const;
 private:
-    std::shared_ptr<HBITMAP> hBitmapPtr;
-    static void DeleteObjectFunc(HGDIOBJ obj); 
+    HBitmapSharedPtr hBitmapPtr;
 };
