@@ -1,10 +1,6 @@
 #include "ApplicationStopper.h"
-#include <iostream>
-#include <windows.h>
 
-constexpr auto HOTKEY_ID = 1;
-
-ApplicationStopper::ApplicationStopper() : stopRequested(false) {
+ApplicationStopper::ApplicationStopper(UINT hotkey) : stopRequested(false), userHotkey(hotkey) {
     start();
 }
 
@@ -29,7 +25,7 @@ bool ApplicationStopper::shouldStop() const {
 }
 
 void ApplicationStopper::run() {
-    if (!RegisterHotKey(NULL, HOTKEY_ID, MOD_CONTROL, 0x51)) {
+    if (!RegisterHotKey(NULL, HOTKEY_ID, MOD_CONTROL, userHotkey)) {
         std::cerr << "Failed to register hotkey." << std::endl;
         return;
     }
