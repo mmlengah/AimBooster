@@ -129,10 +129,12 @@
   <ItemGroup>
     <ClCompile Include="ApplicationStopper.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ScreenCapture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationStopper.h" />
     <ClInclude Include="Keys.h" />
+    <ClInclude Include="ScreenCapture.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
