@@ -11,7 +11,7 @@ class ColorSelector {
 public:
     ColorSelector(RGBColor targetColor, RGBColor markColor, int radius);
     void processBitmap(HBitmap::HBitmapSharedPtr bmp, const RECT& captureArea);
-    std::shared_ptr<std::queue<Position>> getMatchingPixels() const;
+    std::shared_ptr<std::queue<Position>> getMatchingPixels();
 private:
     RGBColor targetColor;
     RGBColor markColor;

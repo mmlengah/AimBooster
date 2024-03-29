@@ -1,6 +1,6 @@
 #include "ApplicationStopper.h"
 
-ApplicationStopper::ApplicationStopper(UINT hotkey) : stopRequested(false), userHotkey(hotkey) {
+ApplicationStopper::ApplicationStopper(UINT hotkey) : running(true), userHotkey(hotkey) { // Now starts as true
     start();
 }
 
@@ -14,14 +14,14 @@ void ApplicationStopper::start() {
 
 void ApplicationStopper::stop() {
     if (stopThread.joinable()) {
-        stopRequested = true;
+        running = false;
         stopThread.join();
     }
     UnregisterHotKey(NULL, USER_HOTKEY_ID);
 }
 
-bool ApplicationStopper::shouldStop() const {
-    return stopRequested.load();
+bool ApplicationStopper::isRunning() const { 
+    return running.load();
 }
 
 void ApplicationStopper::run() {
@@ -37,11 +37,11 @@ void ApplicationStopper::run() {
 
     MSG msg = { 0 };
 
-    while (!stopRequested) {
+    while (running) { 
         if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
             if (msg.message == WM_HOTKEY && (msg.wParam == USER_HOTKEY_ID || msg.wParam == CTRL_ALT_F4_HOTKEY_ID)) {
                 std::cout << "Stopping loop..." << std::endl;
-                stopRequested = true;
+                running = false; 
                 break;
             }
             TranslateMessage(&msg);
