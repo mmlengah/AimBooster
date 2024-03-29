@@ -5,8 +5,6 @@
 
 ScreenCapture::ScreenCapture(RECT captureArea) : hBitmap(nullptr), captureArea(captureArea) {
     SetProcessDPIAware();
-    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
     if (captureArea.right <= captureArea.left || captureArea.bottom <= captureArea.top ||
         captureArea.left < 0 || captureArea.top < 0 ||
@@ -98,4 +96,27 @@ bool ScreenCapture::SaveBitmapToFile(HBITMAP hBitmap, LPCWSTR filename) {
 
 RECT ScreenCapture::GetCaptureArea() const {
     return captureArea;
+}
+
+int ScreenCapture::GetScreenWidth()
+{
+    InitializeScreenDimensions();
+    return screenWidth;
+
+}
+
+int ScreenCapture::GetScreenHeight()
+{
+    InitializeScreenDimensions(); 
+    return screenHeight;
+}
+
+void ScreenCapture::InitializeScreenDimensions()
+{
+    if (!staticDimensionsSet) {
+        SetProcessDPIAware();
+        screenWidth = GetSystemMetrics(SM_CXSCREEN);
+        screenHeight = GetSystemMetrics(SM_CYSCREEN);
+        staticDimensionsSet = true;
+    }
 }

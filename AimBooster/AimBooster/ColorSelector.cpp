@@ -14,12 +14,12 @@ void ColorSelector::markSurroundingPixels(std::vector<RGBQUAD>& pixels, int x, i
                 int ny = y + dy;
                 if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
                     RGBQUAD& pixel = pixels[ny * width + nx];
-                    RGBColor currentMarkColor = markColor; // Utilize the RGBColor struct
+                    RGBColor currentMarkColor = markColor;
                     if (pixel.rgbRed != currentMarkColor.r() || pixel.rgbGreen != currentMarkColor.g() || pixel.rgbBlue != currentMarkColor.b()) {
                         pixel.rgbRed = currentMarkColor.r();
                         pixel.rgbGreen = currentMarkColor.g();
                         pixel.rgbBlue = currentMarkColor.b();
-                        pixel.rgbReserved = 0; // Ensure the alpha channel is set to 0 for compatibility
+                        pixel.rgbReserved = 0; 
                     }
                 }
             }
