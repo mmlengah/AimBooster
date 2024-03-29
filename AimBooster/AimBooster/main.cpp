@@ -3,7 +3,6 @@
 #include "Color.h"
 #include <memory>
 
-
 int main() {
     RGBColor targetColor = RGBColor(192, 64, 72); // dark grey
     RGBColor markColor = RGBColor(0, 0, 255);  // Blue

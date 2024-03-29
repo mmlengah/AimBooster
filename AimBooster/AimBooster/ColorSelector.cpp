@@ -31,7 +31,7 @@ void ColorSelector::processBitmap(HBitmap::HBitmapSharedPtr bmp) {
     if (!bmp || !*bmp) return;
 
     BITMAP bm{};
-    GetObject(*bmp, sizeof(bm), &bm); // Retrieve bitmap information
+    GetObject(*bmp, sizeof(bm), &bm);
 
     HDC hdcScreen = GetDC(NULL);
     HDC hdc = CreateCompatibleDC(hdcScreen);
