@@ -27,34 +27,21 @@ bool ScreenCapture::SaveBitmap() {
 }
 
 bool ScreenCapture::SaveBitmapToFile(LPCWSTR filename) {
-    SetProcessDPIAware();
+    if (!hBitmap || !(*hBitmap)) {
+        return false; 
+    }
 
-    HDC hScreenDC = GetDC(NULL);
-    HDC hMemoryDC = CreateCompatibleDC(hScreenDC);
-    int width = GetSystemMetrics(SM_CXSCREEN);
-    int height = GetSystemMetrics(SM_CYSCREEN);
-    HBITMAP hRawBitmap = CreateCompatibleBitmap(hScreenDC, width, height);
-    SelectObject(hMemoryDC, hRawBitmap);
-    BitBlt(hMemoryDC, 0, 0, width, height, hScreenDC, 0, 0, SRCCOPY);
-
-    hBitmap = HBitmap::MakeHBitmapSharedPtr(HBITMAP(hRawBitmap));
-
-    bool result = SaveBitmapToFile(hRawBitmap, filename);
-
-    DeleteDC(hMemoryDC);
-    ReleaseDC(NULL, hScreenDC);
-
-    return result;
+    return SaveBitmapToFile(*hBitmap, filename);
 }
 
-HBITMAP* ScreenCapture::GetBitmap() {
-    return hBitmap ? hBitmap.get() : nullptr;
+HBitmap::HBitmapSharedPtr ScreenCapture::GetBitmap() {
+    return hBitmap;
 }
 
 bool ScreenCapture::SaveBitmapToFile(HBITMAP hBitmap, LPCWSTR filename) {
     BITMAPFILEHEADER fileHeader;
     BITMAPINFOHEADER infoHeader;
-    BITMAP bitmap;
+    BITMAP bitmap{};
     DWORD write = 0;
     HANDLE fileHandle;
     DWORD imageSize;

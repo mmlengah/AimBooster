@@ -19,10 +19,11 @@ void ColorSelector::markSurroundingPixels(std::vector<Color>& pixels, int x, int
     }
 }
 
-void ColorSelector::processBitmap(HBITMAP* bmp) {
+void ColorSelector::processBitmap(HBitmap::HBitmapSharedPtr bmp) {
     if (!bmp || !*bmp) return;
 
-    BITMAP bm;
+    BITMAP bm{};
+    
     GetObject(*bmp, sizeof(bm), &bm); // Retrieve bitmap information
 
     // Create a compatible DC
@@ -84,49 +85,4 @@ void ColorSelector::processBitmap(HBITMAP* bmp) {
 
 std::shared_ptr<std::queue<Position>> ColorSelector::getMatchingPixels() const {
     return matchingPixels;
-}
-
-bool ColorSelector::SaveHBitmapToFile(HBITMAP hBitmap, LPCWSTR filename) {
-    BITMAPFILEHEADER fileHeader;
-    BITMAPINFOHEADER infoHeader;
-    BITMAP bitmap;
-    DWORD write = 0;
-    HANDLE fileHandle;
-    DWORD imageSize;
-    char* imageData;
-
-    GetObject(hBitmap, sizeof(bitmap), &bitmap);
-
-    fileHandle = CreateFileW(filename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (fileHandle == INVALID_HANDLE_VALUE) {
-        return false;
-    }
-
-    imageSize = bitmap.bmWidth * bitmap.bmHeight * 4; // Assuming 4 bytes per pixel
-    imageData = new char[imageSize];
-
-    ZeroMemory(&fileHeader, sizeof(fileHeader));
-    fileHeader.bfType = 0x4D42; // 'BM'
-    fileHeader.bfSize = sizeof(fileHeader) + sizeof(infoHeader) + imageSize;
-    fileHeader.bfOffBits = sizeof(fileHeader) + sizeof(infoHeader);
-
-    ZeroMemory(&infoHeader, sizeof(infoHeader));
-    infoHeader.biSize = sizeof(infoHeader);
-    infoHeader.biPlanes = 1;
-    infoHeader.biBitCount = 32; // 32 bits per pixel
-    infoHeader.biWidth = bitmap.bmWidth;
-    infoHeader.biHeight = bitmap.bmHeight;
-    infoHeader.biCompression = BI_RGB;
-    infoHeader.biSizeImage = imageSize;
-
-    GetDIBits(GetDC(NULL), hBitmap, 0, bitmap.bmHeight, imageData, (BITMAPINFO*)&infoHeader, DIB_RGB_COLORS);
-
-    WriteFile(fileHandle, &fileHeader, sizeof(fileHeader), &write, NULL);
-    WriteFile(fileHandle, &infoHeader, sizeof(infoHeader), &write, NULL);
-    WriteFile(fileHandle, imageData, imageSize, &write, NULL);
-
-    delete[] imageData;
-    CloseHandle(fileHandle);
-
-    return true;
 }
