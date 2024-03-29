@@ -38,29 +38,42 @@ void ColorSelector::processBitmap(HBITMAP* bmp) {
     ZeroMemory(&bmi, sizeof(bmi));
     bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
     bmi.bmiHeader.biWidth = bm.bmWidth;
-    bmi.bmiHeader.biHeight = bm.bmHeight;
+    bmi.bmiHeader.biHeight = -bm.bmHeight; // Modify to ensure top-down DIB
     bmi.bmiHeader.biPlanes = 1;
     bmi.bmiHeader.biBitCount = 32; // Assuming 32-bit bitmap for simplicity
     bmi.bmiHeader.biCompression = BI_RGB;
 
     // Allocate memory for the pixels
-    auto pixels = new RGBQUAD[bm.bmWidth * bm.bmHeight];
+    auto pixels = new RGBQUAD[bm.bmWidth * abs(bm.bmHeight)];
 
     // Get the bitmap's pixels
-    if (GetDIBits(hdc, *bmp, 0, bm.bmHeight, pixels, &bmi, DIB_RGB_COLORS)) {
-        for (int y = 0; y < bm.bmHeight; y++) {
+    if (GetDIBits(hdc, *bmp, 0, abs(bm.bmHeight), pixels, &bmi, DIB_RGB_COLORS)) {
+        std::vector<Color> pixelColors(bm.bmWidth * abs(bm.bmHeight)); // To store and modify colors
+        for (int y = 0; y < abs(bm.bmHeight); y++) {
             for (int x = 0; x < bm.bmWidth; x++) {
                 // Calculate the pixel's index in the buffer
                 int index = y * bm.bmWidth + x;
                 RGBQUAD& quad = pixels[index];
+                Color currentColor(quad.rgbBlue, quad.rgbGreen, quad.rgbRed);
 
-                // Create a Color object for the pixel
-                Color color(quad.rgbBlue, quad.rgbGreen, quad.rgbRed);
+                pixelColors[index] = currentColor; // Store the original color
 
-                // Print the color
-                std::cout << color << std::endl;
+                if (currentColor == targetColor) {
+                    matchingPixels->push(Position(x, y)); // Store matching pixel position
+                    markSurroundingPixels(pixelColors, x, y, bm.bmWidth, abs(bm.bmHeight)); // Mark surrounding pixels
+                }
             }
         }
+
+        // Convert modified pixelColors back to RGBQUAD array
+        for (int i = 0; i < bm.bmWidth * abs(bm.bmHeight); i++) {
+            pixels[i].rgbBlue = pixelColors[i].b;
+            pixels[i].rgbGreen = pixelColors[i].g;
+            pixels[i].rgbRed = pixelColors[i].r;
+        }
+
+        // Update the bitmap with the modified pixels
+        SetDIBits(hdc, *bmp, 0, abs(bm.bmHeight), pixels, &bmi, DIB_RGB_COLORS);
     }
 
     // Cleanup
@@ -68,8 +81,6 @@ void ColorSelector::processBitmap(HBITMAP* bmp) {
     SelectObject(hdc, oldbmp); // Restore the old bitmap
     DeleteDC(hdc); // Delete the DC
 }
-
-
 
 std::shared_ptr<std::queue<Position>> ColorSelector::getMatchingPixels() const {
     return matchingPixels;

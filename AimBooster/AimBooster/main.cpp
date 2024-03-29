@@ -12,7 +12,7 @@ int main() {
 
     capturer->SaveBitmap();
     colorSelector->processBitmap(capturer->GetBitmap());
-    //capturer->SaveBitmapToFile(L"Screenshot.bmp");
+    capturer->SaveBitmapToFile(L"Screenshot.bmp");
 
     return 0;
 }
