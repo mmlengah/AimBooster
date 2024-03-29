@@ -4,8 +4,8 @@
 
 
 int main() {
-    Color targetColor = Color(28, 28, 28); // dark grey
-    Color markColor = Color(0, 0, 255);  // Red
+    Color targetColor = Color(72, 64, 192); // dark grey
+    Color markColor = Color(255, 0, 0);  // Red
 
     std::unique_ptr<ScreenCapture> capturer = std::make_unique<ScreenCapture>();
     std::unique_ptr<ColorSelector> colorSelector = std::make_unique<ColorSelector>(targetColor, markColor, 5);

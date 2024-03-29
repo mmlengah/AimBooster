@@ -1,4 +1,5 @@
 #include "Color.h"
+#include "HBitmap.h"
 #include <windows.h>
 #include <queue>
 #include <memory>
@@ -12,13 +13,12 @@ struct Position {
 class ColorSelector {
 public:
     ColorSelector(Color targetColor, Color markColor, int radius);
-    void processBitmap(HBITMAP* bmp);
+    void processBitmap(HBitmap::HBitmapSharedPtr bmp);
     std::shared_ptr<std::queue<Position>> getMatchingPixels() const;
 private:
     Color targetColor;
     Color markColor;
     int radius;
     std::shared_ptr<std::queue<Position>> matchingPixels;
-    bool SaveHBitmapToFile(HBITMAP hBitmap, LPCWSTR filename = L"SShot.bmp");
     void markSurroundingPixels(std::vector<Color>& pixels, int x, int y, int width, int height);
 };

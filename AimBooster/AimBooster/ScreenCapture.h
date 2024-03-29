@@ -10,7 +10,7 @@ public:
     bool SaveBitmap();
     bool SaveBitmapToFile(LPCWSTR filename); 
     bool SaveBitmapToFile(HBITMAP hBitmap, LPCWSTR filename);
-    HBITMAP* GetBitmap();
+    HBitmap::HBitmapSharedPtr GetBitmap();
 private:
     HBitmap::HBitmapSharedPtr hBitmap;
 };
