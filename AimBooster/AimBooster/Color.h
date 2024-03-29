@@ -1,27 +1,42 @@
 #pragma once
+#include <windows.h>
 #include <iostream>
 
-struct Color {
-    unsigned char b, g, r;
+struct RGBColor {
+    RGBQUAD rgbColor;
 
-    Color(unsigned char blue, unsigned char green, unsigned char red)
-        : b(blue), g(green), r(red) {}
-
-    Color()
-        : b(0), g(0), r(0) {}
-
-    bool operator==(const Color& other) const {
-        return b == other.b && g == other.g && r == other.r;
+    RGBColor(unsigned char red, unsigned char green, unsigned char blue) {
+        rgbColor.rgbRed = red;
+        rgbColor.rgbGreen = green;
+        rgbColor.rgbBlue = blue;
+        rgbColor.rgbReserved = 0; 
     }
 
-    bool operator!=(const Color& other) const {
+    RGBColor() {
+        rgbColor.rgbBlue = 0;
+        rgbColor.rgbGreen = 0;
+        rgbColor.rgbRed = 0;
+        rgbColor.rgbReserved = 0;
+    }
+
+    unsigned char r() const { return rgbColor.rgbRed; }
+    unsigned char g() const { return rgbColor.rgbGreen; }
+    unsigned char b() const { return rgbColor.rgbBlue; }
+
+    bool operator==(const RGBColor& other) const {
+        return rgbColor.rgbRed == other.rgbColor.rgbRed
+            && rgbColor.rgbGreen == other.rgbColor.rgbGreen
+            && rgbColor.rgbBlue == other.rgbColor.rgbBlue;
+    }
+
+    bool operator!=(const RGBColor& other) const {
         return !(*this == other);
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const Color& color) {
-        os << "R: " << static_cast<int>(color.r) << " "
-            << "G: " << static_cast<int>(color.g) << " "
-            << "B: " << static_cast<int>(color.b);
+    friend std::ostream& operator<<(std::ostream& os, const RGBColor& color) {
+        os << "R: " << static_cast<int>(color.rgbColor.rgbRed) << " "
+            << "G: " << static_cast<int>(color.rgbColor.rgbGreen) << " "
+            << "B: " << static_cast<int>(color.rgbColor.rgbBlue);
         return os;
     }
 };
