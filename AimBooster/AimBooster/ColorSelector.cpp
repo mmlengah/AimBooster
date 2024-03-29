@@ -13,7 +13,7 @@ void ColorSelector::markSurroundingPixels(std::vector<RGBQUAD>& pixels, int x, i
                 int nx = x + dx;
                 int ny = y + dy;
                 if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-                    auto& pixel = pixels[ny * width + nx];
+                    RGBQUAD& pixel = pixels[ny * width + nx];
                     RGBColor currentMarkColor = markColor; // Utilize the RGBColor struct
                     if (pixel.rgbRed != currentMarkColor.r() || pixel.rgbGreen != currentMarkColor.g() || pixel.rgbBlue != currentMarkColor.b()) {
                         pixel.rgbRed = currentMarkColor.r();
@@ -27,7 +27,7 @@ void ColorSelector::markSurroundingPixels(std::vector<RGBQUAD>& pixels, int x, i
     }
 }
 
-void ColorSelector::processBitmap(HBitmap::HBitmapSharedPtr bmp) {
+void ColorSelector::processBitmap(HBitmap::HBitmapSharedPtr bmp, const RECT& captureArea) {
     if (!bmp || !*bmp) return;
 
     BITMAP bm{};
@@ -58,7 +58,7 @@ void ColorSelector::processBitmap(HBitmap::HBitmapSharedPtr bmp) {
                 RGBColor currentTargetColor = targetColor; 
 
                 if (quad.rgbRed == currentTargetColor.r() && quad.rgbGreen == currentTargetColor.g() && quad.rgbBlue == currentTargetColor.b()) {
-                    matchingPixels->push(Position(x, y));
+                    matchingPixels->push(Position(x + captureArea.left, y + captureArea.top));
                     markSurroundingPixels(pixels, x, y, bm.bmWidth, abs(bm.bmHeight));
                 }
             }
