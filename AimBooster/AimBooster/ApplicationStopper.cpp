@@ -17,7 +17,7 @@ void ApplicationStopper::stop() {
         stopRequested = true;
         stopThread.join();
     }
-    UnregisterHotKey(NULL, HOTKEY_ID);
+    UnregisterHotKey(NULL, USER_HOTKEY_ID);
 }
 
 bool ApplicationStopper::shouldStop() const {
@@ -25,8 +25,13 @@ bool ApplicationStopper::shouldStop() const {
 }
 
 void ApplicationStopper::run() {
-    if (!RegisterHotKey(NULL, HOTKEY_ID, MOD_CONTROL, userHotkey)) {
+    if (!RegisterHotKey(NULL, USER_HOTKEY_ID, MOD_CONTROL, userHotkey)) {
         std::cerr << "Failed to register hotkey." << std::endl;
+        return;
+    }
+
+    if (!RegisterHotKey(NULL, CTRL_ALT_F4_HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_F4)) {
+        std::cerr << "Failed to register Ctrl + Alt + F4 hotkey." << std::endl;
         return;
     }
 
@@ -34,7 +39,7 @@ void ApplicationStopper::run() {
 
     while (!stopRequested) {
         if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-            if (msg.message == WM_HOTKEY && msg.wParam == HOTKEY_ID) {
+            if (msg.message == WM_HOTKEY && (msg.wParam == USER_HOTKEY_ID || msg.wParam == CTRL_ALT_F4_HOTKEY_ID)) {
                 std::cout << "Stopping loop..." << std::endl;
                 stopRequested = true;
                 break;

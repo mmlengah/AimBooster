@@ -2,7 +2,7 @@
 
 #include <windows.h>
 #include <memory> 
-#include "HBitmapPointer.h"
+#include "HBitmap.h"
 
 class ScreenCapture {
 public:
@@ -10,7 +10,7 @@ public:
     bool SaveBitmap();
     bool SaveBitmapToFile(LPCWSTR filename); 
     bool SaveBitmapToFile(HBITMAP hBitmap, LPCWSTR filename);
-    HBitmapSharedPtr& GetBitmap();
+    HBITMAP* GetBitmap();
 private:
-    HBitmapSharedPtr hBitmapPtr;
+    HBitmap::HBitmapSharedPtr hBitmap;
 };

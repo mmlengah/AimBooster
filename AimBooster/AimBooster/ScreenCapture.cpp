@@ -3,28 +3,27 @@
 
 #pragma comment(lib, "Shcore.lib")
 
-ScreenCapture::ScreenCapture() : hBitmapPtr(nullptr) {
+ScreenCapture::ScreenCapture() : hBitmap(nullptr) {
 
 }
 
 bool ScreenCapture::SaveBitmap() {
     SetProcessDPIAware();
 
-    HDC hScreenDC = GetDC(NULL);
-    HDC hMemoryDC = CreateCompatibleDC(hScreenDC);
-    int width = GetSystemMetrics(SM_CXSCREEN);
+    HDC hScreenDC = GetDC(NULL); 
+    HDC hMemoryDC = CreateCompatibleDC(hScreenDC); 
+    int width = GetSystemMetrics(SM_CXSCREEN); 
     int height = GetSystemMetrics(SM_CYSCREEN);
-    HBITMAP hBitmap = CreateCompatibleBitmap(hScreenDC, width, height);
-    SelectObject(hMemoryDC, hBitmap);
-    BitBlt(hMemoryDC, 0, 0, width, height, hScreenDC, 0, 0, SRCCOPY);
+    HBITMAP hRawBitmap = CreateCompatibleBitmap(hScreenDC, width, height);
+    SelectObject(hMemoryDC, hRawBitmap); 
+    BitBlt(hMemoryDC, 0, 0, width, height, hScreenDC, 0, 0, SRCCOPY); 
 
-    hBitmapPtr = MakeHBitmapSharedPtr(HBITMAP(hBitmap));
+    hBitmap = HBitmap::MakeHBitmapSharedPtr(hRawBitmap);
 
-    // Cleanup
-    DeleteDC(hMemoryDC);
-    ReleaseDC(NULL, hScreenDC);
+    DeleteDC(hMemoryDC); 
+    ReleaseDC(NULL, hScreenDC); 
 
-    return hBitmapPtr != nullptr;
+    return hBitmap != nullptr;
 }
 
 bool ScreenCapture::SaveBitmapToFile(LPCWSTR filename) {
@@ -34,13 +33,13 @@ bool ScreenCapture::SaveBitmapToFile(LPCWSTR filename) {
     HDC hMemoryDC = CreateCompatibleDC(hScreenDC);
     int width = GetSystemMetrics(SM_CXSCREEN);
     int height = GetSystemMetrics(SM_CYSCREEN);
-    HBITMAP hBitmap = CreateCompatibleBitmap(hScreenDC, width, height);
-    SelectObject(hMemoryDC, hBitmap);
+    HBITMAP hRawBitmap = CreateCompatibleBitmap(hScreenDC, width, height);
+    SelectObject(hMemoryDC, hRawBitmap);
     BitBlt(hMemoryDC, 0, 0, width, height, hScreenDC, 0, 0, SRCCOPY);
 
-    hBitmapPtr = MakeHBitmapSharedPtr(HBITMAP(hBitmap));
+    hBitmap = HBitmap::MakeHBitmapSharedPtr(HBITMAP(hRawBitmap));
 
-    bool result = SaveBitmapToFile(hBitmap, filename);
+    bool result = SaveBitmapToFile(hRawBitmap, filename);
 
     DeleteDC(hMemoryDC);
     ReleaseDC(NULL, hScreenDC);
@@ -48,8 +47,8 @@ bool ScreenCapture::SaveBitmapToFile(LPCWSTR filename) {
     return result;
 }
 
-HBitmapSharedPtr& ScreenCapture::GetBitmap() {
-    return hBitmapPtr;
+HBITMAP* ScreenCapture::GetBitmap() {
+    return hBitmap ? hBitmap.get() : nullptr;
 }
 
 bool ScreenCapture::SaveBitmapToFile(HBITMAP hBitmap, LPCWSTR filename) {

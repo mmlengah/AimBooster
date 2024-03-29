@@ -1,5 +1,5 @@
 ﻿  ColorSelector.cpp
   ScreenCapture.cpp
+  main.cpp
   Generating Code...
-  LINK : C:\Users\mmlen\Documents\GitHub\AimBooster\AimBooster\x64\Debug\AimBooster.exe not found or not built by the last incremental link; performing full link
   AimBooster.vcxproj -> C:\Users\mmlen\Documents\GitHub\AimBooster\AimBooster\x64\Debug\AimBooster.exe

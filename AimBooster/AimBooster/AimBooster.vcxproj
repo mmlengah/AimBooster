@@ -134,8 +134,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationStopper.h" />
+    <ClInclude Include="Color.h" />
     <ClInclude Include="ColorSelector.h" />
-    <ClInclude Include="HBitmapPointer.h" />
+    <ClInclude Include="HBitmap.h" />
     <ClInclude Include="Keys.h" />
     <ClInclude Include="ScreenCapture.h" />
   </ItemGroup>

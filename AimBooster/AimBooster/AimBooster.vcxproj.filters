@@ -44,7 +44,10 @@
     <ClInclude Include="ColorSelector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HBitmapPointer.h">
+    <ClInclude Include="HBitmap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Color.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
