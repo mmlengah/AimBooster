@@ -3,25 +3,38 @@
 
 #pragma comment(lib, "Shcore.lib")
 
-ScreenCapture::ScreenCapture() : hBitmap(nullptr) {
+ScreenCapture::ScreenCapture(RECT captureArea) : hBitmap(nullptr), captureArea(captureArea) {
+    SetProcessDPIAware();
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
+    if (captureArea.right <= captureArea.left || captureArea.bottom <= captureArea.top ||
+        captureArea.left < 0 || captureArea.top < 0 ||
+        captureArea.right > screenWidth || captureArea.bottom > screenHeight) {
+        this->captureArea = { 0, 0, screenWidth, screenHeight };
+        isCaptureAreaSet = false;
+    }
+    else {
+        isCaptureAreaSet = true;
+    }
 }
 
 bool ScreenCapture::SaveBitmap() {
-    SetProcessDPIAware();
-
-    HDC hScreenDC = GetDC(NULL); 
-    HDC hMemoryDC = CreateCompatibleDC(hScreenDC); 
-    int width = GetSystemMetrics(SM_CXSCREEN); 
-    int height = GetSystemMetrics(SM_CYSCREEN);
+    HDC hScreenDC = GetDC(NULL);
+    HDC hMemoryDC = CreateCompatibleDC(hScreenDC);
+    int width = isCaptureAreaSet ? captureArea.right - captureArea.left : GetSystemMetrics(SM_CXSCREEN);
+    int height = isCaptureAreaSet ? captureArea.bottom - captureArea.top : GetSystemMetrics(SM_CYSCREEN);
     HBITMAP hRawBitmap = CreateCompatibleBitmap(hScreenDC, width, height);
-    SelectObject(hMemoryDC, hRawBitmap); 
-    BitBlt(hMemoryDC, 0, 0, width, height, hScreenDC, 0, 0, SRCCOPY); 
+    SelectObject(hMemoryDC, hRawBitmap);
+
+    int captureX = isCaptureAreaSet ? captureArea.left : 0;
+    int captureY = isCaptureAreaSet ? captureArea.top : 0;
+    BitBlt(hMemoryDC, 0, 0, width, height, hScreenDC, captureX, captureY, SRCCOPY);
 
     hBitmap = HBitmap::MakeHBitmapSharedPtr(hRawBitmap);
 
-    DeleteDC(hMemoryDC); 
-    ReleaseDC(NULL, hScreenDC); 
+    DeleteDC(hMemoryDC);
+    ReleaseDC(NULL, hScreenDC);
 
     return hBitmap != nullptr;
 }
@@ -81,4 +94,8 @@ bool ScreenCapture::SaveBitmapToFile(HBITMAP hBitmap, LPCWSTR filename) {
     CloseHandle(fileHandle);
 
     return true;
+}
+
+RECT ScreenCapture::GetCaptureArea() const {
+    return captureArea;
 }
