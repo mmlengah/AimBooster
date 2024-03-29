@@ -128,8 +128,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ApplicationStopper.cpp" />
+    <ClCompile Include="Color.cpp" />
     <ClCompile Include="ColorSelector.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Position.cpp" />
     <ClCompile Include="ScreenCapture.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -138,6 +140,7 @@
     <ClInclude Include="ColorSelector.h" />
     <ClInclude Include="HBitmap.h" />
     <ClInclude Include="Keys.h" />
+    <ClInclude Include="Position.h" />
     <ClInclude Include="ScreenCapture.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
