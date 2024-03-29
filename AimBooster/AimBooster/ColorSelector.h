@@ -1,3 +1,4 @@
+#include "HBitmapPointer.h"
 #include <windows.h>
 #include <queue>
 #include <memory>
@@ -11,7 +12,7 @@ struct Position {
 class ColorSelector {
 public:
     ColorSelector(COLORREF color, COLORREF markColor, int radius);
-    void processBitmap(std::shared_ptr<HBITMAP> bmp);
+    void processBitmap(HBitmapSharedPtr& bmp);
     std::shared_ptr<std::queue<Position>> getMatchingPixels() const;
 private:
     COLORREF targetColor;
