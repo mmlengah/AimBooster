@@ -4,15 +4,15 @@
 
 
 int main() {
-    COLORREF targetColor = RGB(28, 28, 28); // Dark gray
-    COLORREF markColor = RGB(255, 0, 0);  // Red
+    Color targetColor = Color(28, 28, 28); // dark grey
+    Color markColor = Color(0, 0, 255);  // Red
 
     std::unique_ptr<ScreenCapture> capturer = std::make_unique<ScreenCapture>();
     std::unique_ptr<ColorSelector> colorSelector = std::make_unique<ColorSelector>(targetColor, markColor, 5);
 
     capturer->SaveBitmap();
     colorSelector->processBitmap(capturer->GetBitmap());
-    capturer->SaveBitmapToFile(L"Screenshot.bmp");
+    //capturer->SaveBitmapToFile(L"Screenshot.bmp");
 
     return 0;
 }

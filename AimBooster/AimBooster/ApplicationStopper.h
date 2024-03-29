@@ -3,7 +3,8 @@
 #include <iostream>
 #include <windows.h>
 
-constexpr auto HOTKEY_ID = 1;
+constexpr auto USER_HOTKEY_ID = 1;
+constexpr auto CTRL_ALT_F4_HOTKEY_ID = 2;
 
 class ApplicationStopper {
 public:
