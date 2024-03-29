@@ -135,6 +135,7 @@
     <ClCompile Include="Color.cpp" />
     <ClCompile Include="ColorSelector.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MouseClickSimulator.cpp" />
     <ClCompile Include="Position.cpp" />
     <ClCompile Include="ScreenCapture.cpp" />
   </ItemGroup>
@@ -144,6 +145,7 @@
     <ClInclude Include="ColorSelector.h" />
     <ClInclude Include="HBitmap.h" />
     <ClInclude Include="Keys.h" />
+    <ClInclude Include="MouseClickSimulator.h" />
     <ClInclude Include="Position.h" />
     <ClInclude Include="ScreenCapture.h" />
   </ItemGroup>

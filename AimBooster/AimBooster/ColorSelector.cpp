@@ -71,6 +71,6 @@ void ColorSelector::processBitmap(HBitmap::HBitmapSharedPtr bmp, const RECT& cap
     DeleteDC(hdc);
 }
 
-std::shared_ptr<std::queue<Position>> ColorSelector::getMatchingPixels() const {
+std::shared_ptr<std::queue<Position>> ColorSelector::getMatchingPixels() {
     return matchingPixels;
 }

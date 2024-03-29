@@ -11,11 +11,11 @@ public:
     ApplicationStopper(UINT hotkey);
     ~ApplicationStopper();
     void stop();
-    bool shouldStop() const;
+    bool isRunning() const; 
 
 private:
     UINT userHotkey;
-    std::atomic<bool> stopRequested;
+    std::atomic<bool> running; 
     std::thread stopThread;
     void run();
     void start();

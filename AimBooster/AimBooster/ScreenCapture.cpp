@@ -4,13 +4,14 @@
 #pragma comment(lib, "Shcore.lib")
 
 ScreenCapture::ScreenCapture(RECT captureArea) : hBitmap(nullptr), captureArea(captureArea) {
-    SetProcessDPIAware();
+    InitializeScreenDimensions();
 
     if (captureArea.right <= captureArea.left || captureArea.bottom <= captureArea.top ||
         captureArea.left < 0 || captureArea.top < 0 ||
         captureArea.right > screenWidth || captureArea.bottom > screenHeight) {
         this->captureArea = { 0, 0, screenWidth, screenHeight };
         isCaptureAreaSet = false;
+
     }
     else {
         isCaptureAreaSet = true;
