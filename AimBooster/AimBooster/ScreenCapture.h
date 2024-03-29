@@ -7,10 +7,10 @@
 class ScreenCapture {
 public:
     ScreenCapture();
-    bool CaptureScreen(); 
-    bool CaptureScreenToFile(LPCWSTR filename); 
+    bool SaveBitmap();
+    bool SaveBitmapToFile(LPCWSTR filename); 
     bool SaveBitmapToFile(HBITMAP hBitmap, LPCWSTR filename);
-    HBitmapSharedPtr GetBitmap() const;
+    HBitmapSharedPtr& GetBitmap();
 private:
     HBitmapSharedPtr hBitmapPtr;
 };

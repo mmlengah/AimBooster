@@ -1,0 +1,9 @@
+﻿  ApplicationStopper.cpp
+  ColorSelector.cpp
+  main.cpp
+  ScreenCapture.cpp
+  Generating code
+  Previous IPDB not found, fall back to full compilation.
+  All 269 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  AimBooster.vcxproj -> C:\Users\mmlen\Documents\GitHub\AimBooster\AimBooster\x64\Release\AimBooster.exe

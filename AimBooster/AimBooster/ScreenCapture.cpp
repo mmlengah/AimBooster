@@ -7,7 +7,7 @@ ScreenCapture::ScreenCapture() : hBitmapPtr(nullptr) {
 
 }
 
-bool ScreenCapture::CaptureScreen() {
+bool ScreenCapture::SaveBitmap() {
     SetProcessDPIAware();
 
     HDC hScreenDC = GetDC(NULL);
@@ -27,7 +27,7 @@ bool ScreenCapture::CaptureScreen() {
     return hBitmapPtr != nullptr;
 }
 
-bool ScreenCapture::CaptureScreenToFile(LPCWSTR filename) {
+bool ScreenCapture::SaveBitmapToFile(LPCWSTR filename) {
     SetProcessDPIAware();
 
     HDC hScreenDC = GetDC(NULL);
@@ -48,7 +48,7 @@ bool ScreenCapture::CaptureScreenToFile(LPCWSTR filename) {
     return result;
 }
 
-std::shared_ptr<HBITMAP> ScreenCapture::GetBitmap() const {
+HBitmapSharedPtr& ScreenCapture::GetBitmap() {
     return hBitmapPtr;
 }
 
