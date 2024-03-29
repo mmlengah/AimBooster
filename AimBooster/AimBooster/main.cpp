@@ -7,7 +7,7 @@ int main() {
     RGBColor targetColor = RGBColor(12, 12, 12); // dark grey
     RGBColor markColor = RGBColor(0, 0, 255);  // Blue
 
-    std::unique_ptr<ScreenCapture> capturer = std::make_unique<ScreenCapture>(RECT{ 0, 100, 1000, 200 });
+    std::unique_ptr<ScreenCapture> capturer = std::make_unique<ScreenCapture>(RECT{400, 400, ScreenCapture::GetScreenWidth(), ScreenCapture::GetScreenHeight()});
     std::unique_ptr<ColorSelector> colorSelector = std::make_unique<ColorSelector>(targetColor, markColor, 5);
 
     capturer->SaveBitmap();
