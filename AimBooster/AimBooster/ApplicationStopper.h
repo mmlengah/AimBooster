@@ -6,7 +6,7 @@ class ApplicationStopper {
 public:
     ApplicationStopper(UINT hotkey = Keys::Q);
     ~ApplicationStopper();
-    bool isRunning() const; 
+    std::atomic<bool>& isRunning();
 private:
     std::atomic<bool> running;
     void SetRunning(bool b);

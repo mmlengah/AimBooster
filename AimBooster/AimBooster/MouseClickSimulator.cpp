@@ -5,12 +5,12 @@ void MouseClickSimulator::simulateClickAtPosition(int x, int y) {
     SetCursorPos(x, y);
     // Simulate mouse down and up events for a left-click
     mouse_event(MOUSEEVENTF_LEFTDOWN, x, y, 0, 0);
-    Sleep(100);
+    Sleep(10);
     mouse_event(MOUSEEVENTF_LEFTUP, x, y, 0, 0);
 }
 
-void MouseClickSimulator::click(std::shared_ptr<std::queue<Position>> positions) {
-    while (!positions->empty()) { 
+void MouseClickSimulator::click(std::shared_ptr<std::queue<Position>> positions, std::atomic<bool>& running) {
+    while (!positions->empty() && running.load()) {
         Position pos = positions->front();
         simulateClickAtPosition(pos.x, pos.y);
         positions->pop();

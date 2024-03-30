@@ -3,15 +3,15 @@
 ApplicationStopper::ApplicationStopper(UINT hotkey) : running(true) { 
     std::function<void()> callback = std::bind(&ApplicationStopper::SetRunning, this, false);
     InputHandler::getInstance().subscribeToKeyEvent({ Keys::CONTROL, hotkey }, callback);
-    InputHandler::getInstance().subscribeToKeyEvent({ Keys::CONTROL, Keys::ALT_LEFT, Keys::F4 }, callback);
+    InputHandler::getInstance().subscribeToKeyEvent({ Keys::ALT_LEFT, Keys::F4 }, callback);
 }
 
 ApplicationStopper::~ApplicationStopper() {
 
 }
 
-bool ApplicationStopper::isRunning() const { 
-    return running.load();
+std::atomic<bool>& ApplicationStopper::isRunning() {
+    return running;
 }
 
 void ApplicationStopper::SetRunning(bool b)

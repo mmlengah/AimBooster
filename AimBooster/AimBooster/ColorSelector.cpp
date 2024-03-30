@@ -9,23 +9,29 @@ ColorSelector::ColorSelector(RGBColor targetColor, RGBColor markColor, int radiu
 void ColorSelector::markSurroundingPixels(std::vector<RGBQUAD>& pixels, int x, int y, int width, int height) {
     for (int dy = -radius; dy <= radius; dy++) {
         for (int dx = -radius; dx <= radius; dx++) {
-            if (dx * dx + dy * dy <= radius * radius) {
-                int nx = x + dx;
-                int ny = y + dy;
-                if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-                    RGBQUAD& pixel = pixels[ny * width + nx];
-                    RGBColor currentMarkColor = markColor;
-                    if (pixel.rgbRed != currentMarkColor.r() || pixel.rgbGreen != currentMarkColor.g() || pixel.rgbBlue != currentMarkColor.b()) {
-                        pixel.rgbRed = currentMarkColor.r();
-                        pixel.rgbGreen = currentMarkColor.g();
-                        pixel.rgbBlue = currentMarkColor.b();
-                        pixel.rgbReserved = 0; 
-                    }
-                }
-            }
+            // Continue if the current position is outside the circle defined by the radius
+            if (dx * dx + dy * dy > radius * radius) continue;
+
+            int nx = x + dx;
+            int ny = y + dy;
+
+            // Continue if the new position is out of bounds
+            if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+
+            RGBQUAD& pixel = pixels[ny * width + nx];
+
+            // Continue if the pixel is already the mark color
+            if (pixel.rgbRed == markColor.r() && pixel.rgbGreen == markColor.g() && pixel.rgbBlue == markColor.b()) continue;
+
+            // Mark the pixel with the color
+            pixel.rgbRed = markColor.r();
+            pixel.rgbGreen = markColor.g();
+            pixel.rgbBlue = markColor.b();
+            pixel.rgbReserved = 0;
         }
     }
 }
+
 
 void ColorSelector::processBitmap(HBitmap::HBitmapSharedPtr bmp, const RECT& captureArea) {
     if (!bmp || !*bmp) return;
