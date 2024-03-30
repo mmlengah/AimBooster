@@ -159,8 +159,8 @@ struct Keys {
 	static constexpr UINT SHIFT_RIGHT = VK_RSHIFT; // 0xA1 Right SHIFT key
 	static constexpr UINT CONTROL_LEFT = VK_LCONTROL; // 0xA2 Left CONTROL key
 	static constexpr UINT CONTROL_RIGHT = VK_RCONTROL; // 0xA3 Right CONTROL key
-	static constexpr UINT MENU_LEFT = VK_LMENU; // 0xA4 Left ALT key
-	static constexpr UINT MENU_RIGHT = VK_RMENU; // 0xA5 Right ALT key
+	static constexpr UINT ALT_LEFT = VK_LMENU; // 0xA4 Left ALT key
+	static constexpr UINT ALT_RIGHT = VK_RMENU; // 0xA5 Right ALT key
 
 	// Browser keys
 	static constexpr UINT BROWSER_BACK = VK_BROWSER_BACK; // 0xA6 Browser Back key
