@@ -14,13 +14,14 @@ int main() {
 
     std::unique_ptr<ApplicationStopper> app = std::make_unique<ApplicationStopper>();
     std::unique_ptr<ScreenCapture> capturer = std::make_unique<ScreenCapture>(RECT{ 861, 504, 1759, 1135 });
-    std::unique_ptr<ColorSelector> colorSelector = std::make_unique<ColorSelector>(targetColor, markColor, 5);
+    std::unique_ptr<ColorSelector> colorSelector = std::make_unique<ColorSelector>(targetColor, markColor, 50);
     std::unique_ptr<MouseClickSimulator> simulator = std::make_unique<MouseClickSimulator>();
-   
+
     while (app->isRunning()) {
         capturer->SaveBitmap();
         colorSelector->processBitmap(capturer->GetBitmap(), capturer->GetCaptureArea());
-        simulator->click(colorSelector->getMatchingPixels());
+        //capturer->SaveBitmapToFile(L"ScreenShot.bmp");
+        simulator->click(colorSelector->getMatchingPixels(), app->isRunning());
     }
 
     InputHandler::getInstance().stopListening();
